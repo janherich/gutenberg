@@ -61,7 +61,7 @@
   (let [comparator (if asc compare (fn [x y] (compare y x)))]
     (->> (sort-by :date comparator descriptors)
          (map (fn [idx {order :order :as descriptor}]
-                (if order descriptors (assoc descriptor :order idx))) (iterate inc 0))
+                (if order descriptor (assoc descriptor :order idx))) (iterate inc 0))
          (sort-by :order))))
 
 (defn create-blog-descriptor
