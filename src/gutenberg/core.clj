@@ -19,7 +19,7 @@
     (filter (fn [^java.io.File f] (predicate (.getName f))) files)))
 
 (defn extract-date-title
-  "Extracts date and title from file, returns vector with 
+  "Extracts date and title from file, returns vector with
    date as first and title as second argument"
   [^java.io.File file]
   (let [[_ date title] (re-find #"\A([0-9]{2}-[0-9]{2}-[0-9]{4})-(.+)\.md\z" (.getName file))]
@@ -35,7 +35,7 @@
      :file file}))
 
 (defn merge-with-explicit-descriptor
-  "Merges the post descriptor map with explicit descriptor, 
+  "Merges the post descriptor map with explicit descriptor,
    if such descriptor is found on given path"
   [posts-path {:keys [date title] :as file-descriptor}]
   (let [explicit-descriptor (io/file (str posts-path date "-" title ".edn"))]
@@ -55,7 +55,7 @@
                                               (. InputDateFormat (parse (str date-str "T12")))))))))
 
 (defn sort-descriptors
-  "Sort descriptors according to their dates, but aware of order 
+  "Sort descriptors according to their dates, but aware of order
    specified via :order key in descriptor, if present"
   [descriptors asc]
   (let [comparator (if asc compare (fn [x y] (compare y x)))]
