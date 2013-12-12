@@ -12,13 +12,18 @@
    :title "Blog about funny life"
    :meta-description "Funny blog"
    :site-skeleton "index.html"
-   :menu-container [:div#menu :ul]
-   :menu-element [:div#menu :ul :li]
-   :menu-element-selected [:div#menu :ul :li.selected]
    :outline-dir "./resources/outline/"
    :posts-dir "./resources/posts/"
    :output-dir "./resources/output/"
-   :ascending-ordering true})
+   :ascending-ordering true
+   :menu-container [:div#menu :ul]
+   :menu-element [:div#menu :ul :li]
+   :menu-element-selected [:div#menu :ul :li.selected]
+   :post-container [:div#posts :ul]
+   :post-element [:div#posts :ul :li]
+   :post-title [:div#posts :ul :li :h1]
+   :post-date [:div#posts :ul :li :h2]
+   :post-tags [:div#posts :ul :li :h3]})
 
 (def example-post-config
   {:author "John"
