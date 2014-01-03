@@ -66,8 +66,8 @@
 
 (defn create-blog-descriptor
   "Returns a map containing all data necessary to generate static blog site"
-  [{:keys [author posts-path ascending-ordering] :as blog-descriptor}]
-  (let [post-descriptors (-> (get-post-descriptors author posts-path)
+  [{:keys [author posts-dir ascending-ordering] :as blog-descriptor}]
+  (let [post-descriptors (-> (get-post-descriptors author posts-dir)
                              (sort-descriptors ascending-ordering))]
     (-> (assoc blog-descriptor :posts post-descriptors)
         (dissoc :posts-path :ascending-ordering))))

@@ -1,0 +1,37 @@
+body {
+    background-color: #E8EDED;
+}
+
+#main {
+    background: #eee url('images/paper.png') repeat scroll 0 0;
+    border-radius: 8px;
+    box-shadow: #fff 0 1px 0 1px inset,rgba(0,0,0,0.35) 0 0 5px;
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+
+#wrapper {
+    margin-top: 20px;
+}
+
+#header {
+    padding-bottom: 10px;
+    border-bottom: 2px solid #eee;
+}
+
+#posts {
+    margin-top: 20px;
+}
+
+.post-title {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.post-date {
+    margin-right: 10px;
+}
+
+.post-label {
+    font-size: 100%;
+}
