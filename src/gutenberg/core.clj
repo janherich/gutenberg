@@ -1,7 +1,8 @@
 (ns gutenberg.core
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
-            [clojure.tools.reader.edn :as edn]))
+            [clojure.tools.reader.edn :as edn]
+            [gutenberg.transformations :as t]))
 
 (def InputDateFormat (java.text.SimpleDateFormat. "dd-MM-yyyy'T'HH"))
 
@@ -52,7 +53,7 @@
        (map (partial merge-with-explicit-descriptor posts-path))
        (map (fn [descriptor]
               (update-in descriptor [:date] (fn [date-str]
-                                              (. InputDateFormat (parse (str date-str "T12")))))))))
+                                              (.parse InputDateFormat (str date-str "T12"))))))))
 
 (defn sort-descriptors
   "Sort descriptors according to their dates, but aware of order
@@ -66,8 +67,12 @@
 
 (defn create-blog-descriptor
   "Returns a map containing all data necessary to generate static blog site"
-  [{:keys [author posts-dir ascending-ordering] :as blog-descriptor}]
+  [{:keys [author posts-dir ascending-ordering
+           outline-dir template] :as blog-descriptor}]
   (let [post-descriptors (-> (get-post-descriptors author posts-dir)
-                             (sort-descriptors ascending-ordering))]
-    (-> (assoc blog-descriptor :posts post-descriptors)
-        (dissoc :posts-path :ascending-ordering))))
+                             (sort-descriptors ascending-ordering))
+        index-file (io/file (str outline-dir template))]
+    (-> blog-descriptor
+        (assoc :posts post-descriptors)
+        (assoc :index-file index-file)
+        (dissoc :posts-path :ascending-ordering :outline-dir :template))))
