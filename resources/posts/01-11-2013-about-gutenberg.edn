@@ -1,2 +1,3 @@
 {:author "Johnny"
+ :tags #{"Fun" "Summer"}
  :meta-description "Cool blog post"}
