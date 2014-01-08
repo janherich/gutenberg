@@ -5,7 +5,7 @@
             [gutenberg.transformations :as t]))
 
 (def InputDateFormat (java.text.SimpleDateFormat. "dd-MM-yyyy'T'HH"))
-(def OutputDateFormat (java.text.SimpleDateFormat. "dd-MM-yyyy"))
+(def PostLinkDateFormat (java.text.SimpleDateFormat. "dd-MM-yyyy"))
 
 (defn is-post-file?
   "Determines if given filename conforms to post markdown file"
@@ -29,24 +29,36 @@
 
 (defn create-post-uri
   "Creates post uri"
-  [title date]
-  (str "/" title "-" (.format OutputDateFormat date) ".html"))
+  [title ^java.util.Date date]
+  (str "/" title "-" (.format PostLinkDateFormat date) ".html"))
 
 (defn create-default-post-descriptor
   "Creates default post descriptor according to filename and author"
   [^java.io.File file]
   (let [[date-str title] (extract-date-title file)]
-    (let [date (.parse InputDateFormat (str date-str "T12"))]
-      {:date date
-       :title title
-       :file file
-       :post-uri (create-post-uri title date)})))
+    {:date-str date-str
+     :title title
+     :file file}))
+
+(defn generate-post-uri
+  "Generates post uri and associates it into descriptor map"
+  [{:keys [date title] :as post-descriptor}]
+  (assoc post-descriptor :post-uri (create-post-uri title date)))
+
+(defn parse-post-date-string
+  "Parses date string from filename into java date object and
+   associates it into descriptor map, in the same time, dissociates
+   the date string from descriptor map because it's no longer needed"
+  [{:keys [date-str] :as post-descriptor}]
+  (-> post-descriptor
+      (assoc :date (.parse InputDateFormat (str date-str "T12")))
+      (dissoc :date-str)))
 
 (defn merge-with-explicit-descriptor
   "Merges the post descriptor map with explicit descriptor,
    if such descriptor is found on given path"
-  [posts-path {:keys [date title] :as file-descriptor}]
-  (let [explicit-descriptor (io/file (str posts-path date "-" title ".edn"))]
+  [posts-path {:keys [date-str title] :as file-descriptor}]
+  (let [explicit-descriptor (io/file (str posts-path date-str "-" title ".edn"))]
     (if (.exists explicit-descriptor)
       (merge file-descriptor (edn/read-string (slurp explicit-descriptor)))
       file-descriptor)))
@@ -56,8 +68,10 @@
    informations for next transformations"
   [posts-path]
   (->> (list-files posts-path is-post-file?)
-       (map create-default-post-descriptor)
-       (map (partial merge-with-explicit-descriptor posts-path))))
+       (map (comp generate-post-uri
+                  parse-post-date-string
+                  (partial merge-with-explicit-descriptor posts-path)
+                  create-default-post-descriptor))))
 
 (defn sort-descriptors
   "Sorts descriptors according to their dates, but aware of order
@@ -92,7 +106,7 @@
   [partitioned-pages page-name]
   (map (fn [post-descriptors page-number]
          {:post-descriptors post-descriptors
-          :preview-page-uri (create-page-uri page-name page-number)})
+          :preview-page-uri (create-preview-page-uri page-name page-number)})
        partitioned-pages
        (iterate inc 1)))
 
@@ -114,11 +128,9 @@
         post-preview-descriptors (-> post-descriptors
                                      (partition-previews (:previews-on-page paging))
                                      (add-preview-page-uris "PREVIEW")
-                                     (add-previous-next-page-links (:pages-shown paging)))
-        blog-template-file (io/file (str outline-dir blog-template))
-        post-template-file (io/file (str outline-dir post-template))]
+                                     (add-previous-next-page-links (:pages-shown paging)))]
     (-> blog-descriptor
         (assoc :posts post-descriptors)
         (assoc :previews post-preview-descriptors)
-        (assoc :blog-template-file blog-template-file)
-        (assoc :post-template-file post-template-file))))
+        (assoc :blog-template-file (io/file (str outline-dir blog-template)))
+        (assoc :post-template-file (io/file (str outline-dir post-template))))))

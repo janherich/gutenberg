@@ -7,6 +7,8 @@
 (def DESCRIPTION-SELECTOR [:head [:meta (html/attr= :name "description")]])
 (def KEYWORDS-SELECTOR [:head [:meta (html/attr= :name "keywords")]])
 
+(def PostTagDateFormat (java.text.SimpleDateFormat. "dd-MM-yyyy"))
+
 (defn select-element
   ([nodes element]
      (first (html/select nodes element)))
@@ -16,6 +18,9 @@
 (defmacro maybe-content
   ([expr] `(if-let [x# ~expr] (html/content x#) identity))
   ([expr & exprs] `(maybe-content (or ~expr ~@exprs))))
+
+(defmacro maybe-attr
+  [attr-key expr] `(if-let [x# ~expr] (html/set-attr ~attr-key x#) identity))
 
 (defn create-post-sites
   [post-template-nodes
@@ -40,16 +45,16 @@
                                   post-tags)
                  filled-post (html/at post-element-nodes
                                       post-config-title (html/content post-title)
-                                      post-config-date (html/content (.format OutputDateFormat post-date))
+                                      post-config-date (html/content (.format PostTagDateFormat post-date))
                                       post-config-tags-container (html/content filled-tags)
                                       post-config-content (html/content "TEST"))
                  filled-site (html/at post-template-nodes
                                       TITLE-SELECTOR (html/content post-title)
-                                      AUTHOR-SELECTOR (html/set-attr :content post-author)
-                                      DESCRIPTION-SELECTOR (html/set-attr :content post-meta-desc)
-                                      KEYWORDS-SELECTOR (html/set-attr :content
-                                                                       (apply str
-                                                                              (interpose "," post-tags)))
+                                      AUTHOR-SELECTOR (maybe-attr :content post-author)
+                                      DESCRIPTION-SELECTOR (maybe-attr :content post-meta-desc)
+                                      KEYWORDS-SELECTOR (maybe-attr :content
+                                                                    (apply str
+                                                                           (interpose "," post-tags)))
                                       post-config-element (html/substitute filled-post))]
              (assoc post-descriptor :post-site filled-site)))
          post-descriptors)))
