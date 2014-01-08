@@ -34,11 +34,10 @@
 
 (defn create-default-post-descriptor
   "Creates default post descriptor according to filename and author"
-  [author ^java.io.File file]
+  [^java.io.File file]
   (let [[date-str title] (extract-date-title file)]
     (let [date (.parse InputDateFormat (str date-str "T12"))]
-      {:author author
-       :date date
+      {:date date
        :title title
        :file file
        :post-uri (create-post-uri title date)})))
@@ -55,9 +54,9 @@
 (defn get-post-descriptors
   "Returns sequence of post descriptors containing all necessary
    informations for next transformations"
-  [author posts-path]
+  [posts-path]
   (->> (list-files posts-path is-post-file?)
-       (map (partial create-default-post-descriptor author))
+       (map create-default-post-descriptor)
        (map (partial merge-with-explicit-descriptor posts-path))))
 
 (defn sort-descriptors
@@ -110,7 +109,7 @@
   "Returns a map containing all data necessary to generate static blog site"
   [{:keys [post posts-dir ascending-ordering outline-dir blog-template
            paging post-template] :as blog-descriptor}]
-  (let [post-descriptors (-> (get-post-descriptors (:author post) posts-dir)
+  (let [post-descriptors (-> (get-post-descriptors posts-dir)
                              (sort-descriptors ascending-ordering))
         post-preview-descriptors (-> post-descriptors
                                      (partition-previews (:previews-on-page paging))

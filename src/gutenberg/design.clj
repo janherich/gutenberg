@@ -19,8 +19,7 @@
           :date [:div.panel-heading :span.post-date]
           :tags {:container [:div.panel-heading :span.post-tags]
                  :element [:span.label.label-info.post-tag]}
-          :content [:div.panel-body :p]
-          :author "John"}
+          :content [:div.panel-body :p]}
    :post-preview {:container [:div#posts]
                   :element [:div.panel.panel-info]
                   :title [:div.panel-heading :span.panel-title.post-title]

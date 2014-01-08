@@ -13,6 +13,10 @@
   ([nodes container element]
      (select-element nodes (into container element))))
 
+(defmacro maybe-content
+  ([expr] `(if-let [x# ~expr] (html/content x#) identity))
+  ([expr & exprs] `(maybe-content (or ~expr ~@exprs))))
+
 (defn create-post-sites
   [post-template-nodes
    {post-config-element :element
