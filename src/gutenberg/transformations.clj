@@ -19,7 +19,7 @@
   [expr]
   `(if-let [x# ~expr] (html/content x#) identity))
 
-(defmacro maybe-attr
+(defmacro maybe-set-attr
   [attr-key expr]
   `(if-let [x# ~expr] (html/set-attr ~attr-key x#) identity))
 
@@ -51,12 +51,12 @@
                                       post-config-content (html/content "TEST"))
                  filled-site (html/at post-template-nodes
                                       TITLE-SELECTOR (html/content post-title)
-                                      AUTHOR-SELECTOR (maybe-attr :content post-author)
-                                      DESCRIPTION-SELECTOR (maybe-attr :content post-meta-desc)
-                                      KEYWORDS-SELECTOR (maybe-attr :content
-                                                                    (when post-tags
-                                                                      (apply str
-                                                                             (interpose "," post-tags))))
+                                      AUTHOR-SELECTOR (maybe-set-attr :content post-author)
+                                      DESCRIPTION-SELECTOR (maybe-set-attr :content post-meta-desc)
+                                      KEYWORDS-SELECTOR (maybe-set-attr :content
+                                                                        (when post-tags
+                                                                          (apply str
+                                                                                 (interpose "," post-tags))))
                                       post-config-element (html/substitute filled-post))]
              (assoc post-descriptor :post-site filled-site)))
          post-descriptors)))
