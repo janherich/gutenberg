@@ -16,11 +16,12 @@
      (select-element nodes (into container element))))
 
 (defmacro maybe-content
-  ([expr] `(if-let [x# ~expr] (html/content x#) identity))
-  ([expr & exprs] `(maybe-content (or ~expr ~@exprs))))
+  [expr]
+  `(if-let [x# ~expr] (html/content x#) identity))
 
 (defmacro maybe-attr
-  [attr-key expr] `(if-let [x# ~expr] (html/set-attr ~attr-key x#) identity))
+  [attr-key expr]
+  `(if-let [x# ~expr] (html/set-attr ~attr-key x#) identity))
 
 (defn create-post-sites
   [post-template-nodes
@@ -53,8 +54,9 @@
                                       AUTHOR-SELECTOR (maybe-attr :content post-author)
                                       DESCRIPTION-SELECTOR (maybe-attr :content post-meta-desc)
                                       KEYWORDS-SELECTOR (maybe-attr :content
-                                                                    (apply str
-                                                                           (interpose "," post-tags)))
+                                                                    (when post-tags
+                                                                      (apply str
+                                                                             (interpose "," post-tags))))
                                       post-config-element (html/substitute filled-post))]
              (assoc post-descriptor :post-site filled-site)))
          post-descriptors)))
