@@ -8,14 +8,19 @@
    The exact location of those parts is determined in the config (no surprise conventions).")
 
 (def example-site-config
-  {:author "John"
-   :title "Blog about funny life"
-   :meta-description "Funny blog"
-   :template "index.html"
+  {:blog-template "blog.html"
+   :post-template "post.html"
    :outline-dir "./resources/outline/"
    :posts-dir "./resources/posts/"
    :output-dir "./resources/output/"
    :ascending-ordering true
+   :post {:element [:div#post]
+          :title [:div.panel-heading :span.panel-title.post-title]
+          :date [:div.panel-heading :span.post-date]
+          :tags {:container [:div.panel-heading :span.post-tags]
+                 :element [:span.label.label-info.post-tag]}
+          :content [:div.panel-body :p]
+          :author "John"}
    :post-preview {:container [:div#posts]
                   :element [:div.panel.panel-info]
                   :title [:div.panel-heading :span.panel-title.post-title]
@@ -26,9 +31,10 @@
                   :max-characters 140}
    :paging {:container [:div#pages]
             :element [:ul.pagination]
-            :page []
-            :page-active []
-            :post-on-page 5
+            :page [:li :a]
+            :page-active [:li.active :span]
+            :page-disabled [:li.disabled :span]
+            :previews-on-page 5
             :pages-shown 5
             :pages-next "&raquo;"
             :pages-before "&laquo;"}})
