@@ -102,22 +102,30 @@
   (str "/" page-name "-" page-number ".html"))
 
 (defn add-preview-page-uris
-  "Adds uris to preview pages"
+  "Adds uris and numbering to preview pages"
   [partitioned-pages page-name]
   (map (fn [post-descriptors page-number]
          {:post-descriptors post-descriptors
-          :preview-page-uri (create-preview-page-uri page-name page-number)})
+          :page-number page-number
+          :page-uri (create-preview-page-uri page-name page-number)})
        partitioned-pages
        (iterate inc 1)))
 
 (defn add-previous-next-page-links
   "Add links to previous/next pages for each page"
   [pages pages-shown]
-  (let [page-uris (map :preview-page-uri pages)]
-    (map (fn [page idx]
-           (-> page
-               (assoc :prev (take idx page-uris))
-               (assoc :next (drop (+ 1 idx) page-uris)))) pages (iterate inc 0))))
+  (let [paging-vec (mapv #(select-keys % [:page-uri :page-number]) pages)
+        max-idx (count pages)]
+    (map (fn [{:keys [page-number] :as page}]
+           (let [idx (dec page-number)
+                 lower-bound (* pages-shown (quot idx pages-shown))
+                 upper-bound (min max-idx (+ lower-bound pages-shown))]
+             (-> page
+                 (assoc :next-pages (subvec paging-vec page-number upper-bound))
+                 (assoc :prev-pages (subvec paging-vec lower-bound idx))
+                 (assoc :next-section (get paging-vec upper-bound))
+                 (assoc :prev-section (get paging-vec (dec lower-bound))))))
+         pages)))
 
 (defn create-blog-descriptor
   "Returns a map containing all data necessary to generate static blog site"
