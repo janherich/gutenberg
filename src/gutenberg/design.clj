@@ -28,15 +28,14 @@
                          :element [:span.label.label-info.post-tag]}
                   :content [:div.panel-body :p]
                   :max-characters 140}
-   :paging {:container [:div#pages]
-            :element [:ul.pagination]
-            :page [:li :a]
-            :page-active [:li.active :span]
-            :page-disabled [:li.disabled :span]
-            :previews-on-page 5
-            :pages-shown 5
+   :paging {:container [:div#pages :ul.pagination]
+            :element-page [:li :a]
+            :element-page-active [:li.active :span]
+            :element-page-disabled [:li.disabled :span]
             :pages-next "&raquo;"
-            :pages-before "&laquo;"}})
+            :pages-before "&laquo;"
+            :previews-on-page 5
+            :pages-shown 5}})
 
 (def example-post-config
   {:author "John"

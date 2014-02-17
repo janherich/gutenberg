@@ -17,8 +17,8 @@
 (defn list-files
   "Lists files"
   [relative-path predicate]
-  (let [files (file-seq (io/file relative-path))]
-    (filter (fn [^java.io.File f] (predicate (.getName f))) files)))
+  (->> (file-seq (io/file relative-path))
+       (filter (fn [^java.io.File f] (predicate (.getName f))))))
 
 (defn extract-date-title
   "Extracts date and title from file, returns vector with

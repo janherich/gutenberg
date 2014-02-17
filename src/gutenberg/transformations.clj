@@ -23,7 +23,11 @@
   [attr-key expr]
   `(if-let [x# ~expr] (html/set-attr ~attr-key x#) identity))
 
-(defn create-post-sites
+(defn flip [op]
+  (fn [node & values]
+    ((op values) node)))
+
+(defn create-posts
   [post-template-nodes
    {post-config-element :element
     post-config-title :title
@@ -41,9 +45,7 @@
                post-date :date
                post-tags :tags
                post-meta-desc :meta-description :as post-descriptor}]
-           (let [filled-tags (map #(html/at tag-element-nodes
-                                            post-config-tags-element (html/content %))
-                                  post-tags)
+           (let [filled-tags (map (partial (flip html/content) tag-element-nodes) post-tags)
                  filled-post (html/at post-element-nodes
                                       post-config-title (html/content post-title)
                                       post-config-date (html/content (.format PostTagDateFormat post-date))
@@ -61,32 +63,58 @@
              (assoc post-descriptor :post-site filled-site)))
          post-descriptors)))
 
-(defn create-post-preview-sites [blog-template-nodes
-                                 {preview-config-container :container
-                                  preview-config-element :element
-                                  preview-config-title :title
-                                  preview-config-date :date
-                                  preview-config-content :content
-                                  {preview-config-tags-container :container
-                                   preview-config-tags-element :element} :tags}
-                                 {paging-config-container :container
-                                  paging-config-element :element
-                                  paging-config-page :page
-                                  paging-config-page-active :page-active
-                                  paging-config-page-disabled :page-disabled
-                                  paging-config-pages-next :pages-next
-                                  paging-config-page-before :pages-before}
-                                 post-preview-descriptors]
-  (let [paging-element-nodes (select-element blog-template-nodes
-                                             paging-config-container
-                                             paging-config-element)
+(defn create-paging-nodes [paging-template-nodes
+                           {:keys [page-number prev-section next-section
+                                   prev-pages next-pages]}
+                           {:keys [element-page element-page-active
+                                   element-page-disabled pages-before pages-next]}]
+  (let [page-nodes (select-element paging-template-nodes element-page)
+        active-page-nodes (select-element paging-template-nodes element-page-active)
+        page-disabled-nodes (select-element paging-template-nodes element-page-disabled)
+        prev-section-filled (if prev-section
+                              (-> page-nodes
+                                  ((flip html/content) pages-before)
+                                  ((flip html/set-attr) :href (:page-uri prev-section)))
+                              ((flip html/content) page-disabled-nodes pages-before))
+        next-section-filled (if next-section
+                              (-> page-nodes
+                                  ((flip html/content) pages-next)
+                                  ((flip html/set-attr) :href (:page-uri next-section)))
+                              ((flip html/content) page-disabled-nodes pages-next))
+        prev-pages-filled (map (fn [{:keys [page-number page-uri]}]
+                                 (-> page-nodes
+                                     ((flip html/content) page-number)
+                                     ((flip html/set-attr) :href page-uri))) prev-pages)
+        next-pages-filled (map (fn [{:keys [page-number page-uri]}]
+                                 (-> page-nodes
+                                     ((flip html/content) page-number)
+                                     ((flip html/set-attr) :href page-uri))) next-pages)
+        page-filled ((flip html/content) active-page-nodes page-number)]
+    (concat (list prev-section-filled)
+            prev-pages-filled
+            (list page-filled)
+            next-pages-filled
+            (list next-section-filled))))
+
+(defn create-post-previews [blog-template-nodes
+                            {preview-config-container :container
+                             preview-config-element :element
+                             preview-config-title :title
+                             preview-config-date :date
+                             preview-config-content :content
+                             {preview-config-tags-container :container
+                              preview-config-tags-element :element} :tags}
+                            {paging-config-container :container :as paging-config}
+                            preview-descriptors]
+  (let [paging-container-nodes (select-element blog-template-nodes
+                                               paging-config-container)
         preview-element-nodes (select-element blog-template-nodes
                                               preview-config-container
                                               preview-config-element)
         tag-element-nodes (select-element preview-element-nodes
                                           preview-config-tags-container
                                           preview-config-tags-element)]
-    (map (fn [{:keys [post-descriptors preview-page-uri]}]
+    (map (fn [{:keys [post-descriptors page-number page-uri] :as preview-descriptor}]
            (let [filled-posts (map (fn [{post-title :title
                                          post-date :date
                                          post-tags :tags}]
@@ -94,23 +122,16 @@
                                    post-descriptors)]
              (html/at blog-template-nodes
                       preview-config-container (html/content "PREVIEWS")
-                      paging-config-container (html/content "PAGING"))))
-         post-preview-descriptors)))
+                      paging-config-container (html/content (create-paging-nodes
+                                                             paging-container-nodes
+                                                             preview-descriptor
+                                                             paging-config)))))
+         preview-descriptors)))
 
-(defn transform-html [{blog-template-file :blog-template-file
-                       post-template-file :post-template-file
-                       post-descriptors :posts
-                       post-preview-descriptors :previews
-                       config-post :post
-                       config-post-preview :post-preview
-                       config-paging :paging}]
-  (let [post-template-nodes (html/html-resource post-template-file)
-        post-sites (create-post-sites post-template-nodes
-                                      config-post
-                                      post-descriptors)
-        blog-template-nodes (html/html-resource blog-template-file)
-        post-preview-sites (create-post-preview-sites blog-template-nodes
-                                                      config-post-preview
-                                                      config-paging
-                                                      post-preview-descriptors)]
-    post-sites))
+(defn transform-html [{:keys [blog-template-file post-template-file posts
+                              previews post post-preview paging]}]
+  (let [post-tmpl-nodes (html/html-resource post-template-file)
+        post-sites (create-posts post-tmpl-nodes post posts)
+        blog-tmpl-nodes (html/html-resource blog-template-file)
+        preview-sites (create-post-previews blog-tmpl-nodes post-preview paging previews)]
+    preview-sites))
