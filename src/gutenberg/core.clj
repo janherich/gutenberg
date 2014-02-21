@@ -7,32 +7,34 @@
 (def InputDateFormat (java.text.SimpleDateFormat. "dd-MM-yyyy'T'HH"))
 (def PostLinkDateFormat (java.text.SimpleDateFormat. "dd-MM-yyyy"))
 
-(defn is-post-file?
+(def ^:private get-filename-prefix #(let [[_ prefix] (re-find #"\A(.+)\..+\z" %)] prefix))
+
+(defn- is-post-file?
   "Determines if given filename conforms to post markdown file"
   [filename]
   (if (re-find #"\A[0-9]{2}-[0-9]{2}-[0-9]{4}-.+\.md\z" filename)
     true
     false))
 
-(defn list-files
+(defn- list-files
   "Lists files"
   [relative-path predicate]
   (->> (file-seq (io/file relative-path))
        (filter (fn [^java.io.File f] (predicate (.getName f))))))
 
-(defn extract-date-title
+(defn- extract-date-title
   "Extracts date and title from file, returns vector with
    date as first and title as second argument"
   [^java.io.File file]
   (let [[_ date title] (re-find #"\A([0-9]{2}-[0-9]{2}-[0-9]{4})-(.+)\.md\z" (.getName file))]
     [date title]))
 
-(defn create-post-uri
+(defn- create-post-uri
   "Creates post uri"
   [title ^java.util.Date date]
-  (str "/" title "-" (.format PostLinkDateFormat date) ".html"))
+  (str title "-" (.format PostLinkDateFormat date) ".html"))
 
-(defn create-default-post-descriptor
+(defn- create-default-post-descriptor
   "Creates default post descriptor according to filename and author"
   [^java.io.File file]
   (let [[date-str title] (extract-date-title file)]
@@ -40,12 +42,12 @@
      :title title
      :file file}))
 
-(defn generate-post-uri
+(defn- generate-post-uri
   "Generates post uri and associates it into descriptor map"
   [{:keys [date title] :as post-descriptor}]
   (assoc post-descriptor :post-uri (create-post-uri title date)))
 
-(defn parse-post-date-string
+(defn- parse-post-date-string
   "Parses date string from filename into java date object and
    associates it into descriptor map, in the same time, dissociates
    the date string from descriptor map because it's no longer needed"
@@ -54,7 +56,7 @@
       (assoc :date (.parse InputDateFormat (str date-str "T12")))
       (dissoc :date-str)))
 
-(defn merge-with-explicit-descriptor
+(defn- merge-with-explicit-descriptor
   "Merges the post descriptor map with explicit descriptor,
    if such descriptor is found on given path"
   [posts-path {:keys [date-str title] :as file-descriptor}]
@@ -63,7 +65,7 @@
       (merge file-descriptor (edn/read-string (slurp explicit-descriptor)))
       file-descriptor)))
 
-(defn get-post-descriptors
+(defn- get-post-descriptors
   "Returns sequence of post descriptors containing all necessary
    informations for next transformations"
   [posts-path]
@@ -73,7 +75,7 @@
                   (partial merge-with-explicit-descriptor posts-path)
                   create-default-post-descriptor))))
 
-(defn sort-descriptors
+(defn- sort-descriptors
   "Sorts descriptors according to their dates, but aware of order
    specified via :order key in descriptor, if present"
   [descriptors asc]
@@ -83,7 +85,7 @@
                 (if order descriptor (assoc descriptor :order idx))) (iterate inc 0))
          (sort-by :order))))
 
-(defn partition-previews
+(defn- partition-previews
   "Partitions post-descriptors into preview sites according to number of post previews
    on each site"
   [post-descriptors previews-on-page]
@@ -96,22 +98,22 @@
       whole-preview-sites
       (conj whole-preview-sites (drop whole-posts-count post-descriptors)))))
 
-(defn create-preview-page-uri
+(defn- create-preview-page-uri
   "Creates preview page uri"
   [page-name page-number]
-  (str "/" page-name "-" page-number ".html"))
+  (str page-name "-" page-number ".html"))
 
-(defn add-preview-page-uris
+(defn- add-preview-page-uris
   "Adds uris and numbering to preview pages"
   [partitioned-pages page-name]
   (map (fn [post-descriptors page-number]
-         {:post-descriptors post-descriptors
+         {:posts post-descriptors
           :page-number page-number
           :page-uri (create-preview-page-uri page-name page-number)})
        partitioned-pages
        (iterate inc 1)))
 
-(defn add-previous-next-page-links
+(defn- add-previous-next-page-links
   "Add links to previous/next pages for each page"
   [pages pages-shown]
   (let [paging-vec (mapv #(select-keys % [:page-uri :page-number]) pages)
@@ -135,7 +137,7 @@
                              (sort-descriptors ascending-ordering))
         post-preview-descriptors (-> post-descriptors
                                      (partition-previews (:previews-on-page paging))
-                                     (add-preview-page-uris "PREVIEW")
+                                     (add-preview-page-uris (get-filename-prefix blog-template))
                                      (add-previous-next-page-links (:pages-shown paging)))]
     (-> blog-descriptor
         (assoc :posts post-descriptors)
