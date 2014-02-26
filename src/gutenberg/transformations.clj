@@ -26,17 +26,16 @@
   `(if-let [x# ~expr] (html/set-attr ~attr-key x#) identity))
 
 (defn create-post
-  [post-descriptor post-element-nodes tag-element-nodes
+  [content-fn post-element-nodes tag-element-nodes
    {post-config-title :title post-config-date :date post-config-content :content
-    {post-config-tags-container :container} :tags}
-   {post-author :author post-title :title post-date :date post-tags :tags}
-   content-fn]
+    {post-config-tags-container :container} :tags :as post-descriptor}
+   {post-author :author post-title :title post-date :date post-tags :tags}]
   (let [filled-tags (map (partial (flip html/content) tag-element-nodes) post-tags)
         filled-post (html/at post-element-nodes
                              post-config-title (html/content post-title)
                              post-config-date (html/content (.format PostTagDateFormat post-date))
                              post-config-tags-container (html/content filled-tags)
-                             post-config-content (html/content "TEST"))]))
+                             post-config-content (html/content (content-fn (:file post-descriptor))))]))
 
 (defn create-posts
   [post-template-nodes
@@ -45,7 +44,7 @@
     post-config-date :date
     post-config-content :content
     {post-config-tags-container :container
-     post-config-tags-element :element} :tags}
+     post-config-tags-element :element} :tags :as post-config}
    post-descriptors]
   (let [post-element-nodes (select-element post-template-nodes post-config-element)
         tag-element-nodes (select-element post-element-nodes
@@ -55,14 +54,8 @@
                post-title :title
                post-date :date
                post-tags :tags
-               post-meta-desc :meta-description :as post-descriptor}]
-           (let [filled-tags (map (partial (flip html/content) tag-element-nodes) post-tags)
-                 filled-post (html/at post-element-nodes
-                                      post-config-title (html/content post-title)
-                                      post-config-date (html/content (.format PostTagDateFormat post-date))
-                                      post-config-tags-container (html/content filled-tags)
-                                      post-config-content (html/content "TEST"))
-                 filled-site (html/at post-template-nodes
+               post-meta-desc :meta-description :as post-descriptor}] 
+           (let [filled-site (html/at post-template-nodes
                                       TITLE-SELECTOR (html/content post-title)
                                       AUTHOR-SELECTOR (maybe-set-attr :content post-author)
                                       DESCRIPTION-SELECTOR (maybe-set-attr :content post-meta-desc)
@@ -70,9 +63,18 @@
                                                                         (when post-tags
                                                                           (apply str
                                                                                  (interpose "," post-tags))))
-                                      post-config-element (html/substitute filled-post))]
+                                      post-config-element (html/substitute (create-post (fn [f] "TEST") post-element-nodes
+                                                                                        tag-element-nodes post-config post-descriptor)))]
              (assoc post-descriptor :post-site filled-site)))
          post-descriptors)))
+
+(comment
+  filled-tags (map (partial (flip html/content) tag-element-nodes) post-tags)
+  filled-post (html/at post-element-nodes
+                       post-config-title (html/content post-title)
+                       post-config-date (html/content (.format PostTagDateFormat post-date))
+                       post-config-tags-container (html/content filled-tags)
+                       post-config-content (html/content "TEST")))
 
 (defn create-paging-nodes [paging-template-nodes
                            {:keys [page-number prev-section next-section
@@ -143,4 +145,4 @@
         post-sites (create-posts post-tmpl-nodes post posts)
         blog-tmpl-nodes (html/html-resource blog-template-file)
         preview-sites (create-post-previews blog-tmpl-nodes post-preview paging previews)]
-    preview-sites))
+    post-sites))
