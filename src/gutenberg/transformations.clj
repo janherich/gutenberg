@@ -47,10 +47,7 @@
         tag-element-nodes (select-element post-element-nodes
                                           post-config-tags-container
                                           post-config-tags-element)]
-    (map (fn [{post-author :author
-               post-title :title
-               post-date :date
-               post-tags :tags
+    (map (fn [{post-author :author post-title :title post-tags :tags
                post-meta-desc :meta-description :as post-descriptor}]
            (let [filled-post (create-post (fn [f] "TEST") post-element-nodes
                                           tag-element-nodes post-config post-descriptor)
