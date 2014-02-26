@@ -25,6 +25,19 @@
   [attr-key expr]
   `(if-let [x# ~expr] (html/set-attr ~attr-key x#) identity))
 
+(defn create-post
+  [post-descriptor post-element-nodes tag-element-nodes
+   {post-config-title :title post-config-date :date post-config-content :content
+    {post-config-tags-container :container} :tags}
+   {post-author :author post-title :title post-date :date post-tags :tags}
+   content-fn]
+  (let [filled-tags (map (partial (flip html/content) tag-element-nodes) post-tags)
+        filled-post (html/at post-element-nodes
+                             post-config-title (html/content post-title)
+                             post-config-date (html/content (.format PostTagDateFormat post-date))
+                             post-config-tags-container (html/content filled-tags)
+                             post-config-content (html/content "TEST"))]))
+
 (defn create-posts
   [post-template-nodes
    {post-config-element :element
@@ -118,7 +131,7 @@
                                           {})
                                         posts)]
                   (html/at blog-template-nodes
-                           preview-config-container (html/content "PREVIEWS")
+                           preview-config-container (html/content "PREVIEW")
                            paging-config-container (html/content (create-paging-nodes
                                                                   paging-container-nodes
                                                                   preview-descriptor
