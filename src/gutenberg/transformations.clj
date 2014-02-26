@@ -28,21 +28,18 @@
 (defn create-post
   [content-fn post-element-nodes tag-element-nodes
    {post-config-title :title post-config-date :date post-config-content :content
-    {post-config-tags-container :container} :tags :as post-descriptor}
-   {post-author :author post-title :title post-date :date post-tags :tags}]
-  (let [filled-tags (map (partial (flip html/content) tag-element-nodes) post-tags)
-        filled-post (html/at post-element-nodes
-                             post-config-title (html/content post-title)
-                             post-config-date (html/content (.format PostTagDateFormat post-date))
-                             post-config-tags-container (html/content filled-tags)
-                             post-config-content (html/content (content-fn (:file post-descriptor))))]))
+    {post-config-tags-container :container} :tags}
+   {post-author :author post-title :title post-date :date post-tags :tags post-file :file}]
+  (let [filled-tags (map (partial (flip html/content) tag-element-nodes) post-tags)]
+    (html/at post-element-nodes
+             post-config-title (html/content post-title)
+             post-config-date (html/content (.format PostTagDateFormat post-date))
+             post-config-tags-container (html/content filled-tags)
+             post-config-content (html/content (content-fn post-file)))))
 
 (defn create-posts
   [post-template-nodes
    {post-config-element :element
-    post-config-title :title
-    post-config-date :date
-    post-config-content :content
     {post-config-tags-container :container
      post-config-tags-element :element} :tags :as post-config}
    post-descriptors]
@@ -54,8 +51,10 @@
                post-title :title
                post-date :date
                post-tags :tags
-               post-meta-desc :meta-description :as post-descriptor}] 
-           (let [filled-site (html/at post-template-nodes
+               post-meta-desc :meta-description :as post-descriptor}]
+           (let [filled-post (create-post (fn [f] "TEST") post-element-nodes
+                                          tag-element-nodes post-config post-descriptor)
+                 filled-site (html/at post-template-nodes
                                       TITLE-SELECTOR (html/content post-title)
                                       AUTHOR-SELECTOR (maybe-set-attr :content post-author)
                                       DESCRIPTION-SELECTOR (maybe-set-attr :content post-meta-desc)
@@ -63,18 +62,9 @@
                                                                         (when post-tags
                                                                           (apply str
                                                                                  (interpose "," post-tags))))
-                                      post-config-element (html/substitute (create-post (fn [f] "TEST") post-element-nodes
-                                                                                        tag-element-nodes post-config post-descriptor)))]
+                                      post-config-element (html/substitute filled-post))]
              (assoc post-descriptor :post-site filled-site)))
          post-descriptors)))
-
-(comment
-  filled-tags (map (partial (flip html/content) tag-element-nodes) post-tags)
-  filled-post (html/at post-element-nodes
-                       post-config-title (html/content post-title)
-                       post-config-date (html/content (.format PostTagDateFormat post-date))
-                       post-config-tags-container (html/content filled-tags)
-                       post-config-content (html/content "TEST")))
 
 (defn create-paging-nodes [paging-template-nodes
                            {:keys [page-number prev-section next-section
